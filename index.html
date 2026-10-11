@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Násobilka</title>
+<meta name="description" content="Precvičovanie malej násobilky a delenia">
+<meta name="theme-color" content="#4f46e5">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Násobilka">
+<style>
+  :root {
+    --bg: #f5f3ff;
+    --card: #ffffff;
+    --text: #1e1b4b;
+    --muted: #6b7280;
+    --accent: #4f46e5;
+    --accent-text: #ffffff;
+    --good: #16a34a;
+    --good-bg: #dcfce7;
+    --bad: #dc2626;
+    --bad-bg: #fee2e2;
+    --border: #e0e7ff;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #13111f;
+      --card: #1e1b2e;
+      --text: #ede9fe;
+      --muted: #a1a1aa;
+      --accent: #818cf8;
+      --accent-text: #13111f;
+      --good: #4ade80;
+      --good-bg: #14321f;
+      --bad: #f87171;
+      --bad-bg: #3b1515;
+      --border: #2e2a45;
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    display: flex;
+    flex-direction: column;
+    padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
+    -webkit-tap-highlight-color: transparent;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 0;
+    gap: 12px;
+  }
+  header h1 { font-size: 1.15rem; margin: 0; }
+  .score {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .score .ok { color: var(--good); }
+  main {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding-bottom: 10vh;
+  }
+  .screen { width: 100%; max-width: 420px; text-align: center; }
+  [hidden] { display: none !important; }
+  .card {
+    background: var(--card);
+    border: 2px solid var(--border);
+    border-radius: 24px;
+    padding: 28px 20px;
+  }
+  .lead { color: var(--muted); font-size: 1.05rem; margin: 0 0 24px; line-height: 1.5; }
+  .last { margin: 0 0 24px; font-size: 1.05rem; }
+  button {
+    font: inherit;
+    font-weight: 700;
+    border: 0;
+    border-radius: 16px;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .primary {
+    background: var(--accent);
+    color: var(--accent-text);
+    font-size: 1.4rem;
+    padding: 16px 40px;
+    width: 100%;
+  }
+  .primary:active { transform: scale(0.98); }
+  .ghost {
+    background: transparent;
+    color: var(--muted);
+    border: 2px solid var(--border);
+    font-size: 1rem;
+    padding: 10px 20px;
+    margin-top: 28px;
+  }
+  .problem {
+    font-size: clamp(2.8rem, 14vw, 4.2rem);
+    font-weight: 800;
+    margin: 0 0 20px;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: 0.02em;
+  }
+  form { display: flex; gap: 10px; }
+  input {
+    flex: 1;
+    min-width: 0;
+    font: inherit;
+    font-size: 2rem;
+    font-weight: 700;
+    text-align: center;
+    padding: 12px;
+    border-radius: 16px;
+    border: 3px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    outline: none;
+  }
+  input:focus { border-color: var(--accent); }
+  form .primary { width: auto; padding: 12px 22px; font-size: 1.2rem; }
+  .feedback {
+    min-height: 64px;
+    margin-top: 16px;
+    border-radius: 16px;
+    padding: 12px;
+    font-size: 1.25rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .feedback.good { background: var(--good-bg); color: var(--good); }
+  .feedback.bad { background: var(--bad-bg); color: var(--bad); }
+  .feedback .next { background: var(--bad); color: var(--card); padding: 8px 18px; font-size: 1.1rem; }
+  .big { font-size: 3rem; font-weight: 800; margin: 8px 0; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+  <header>
+    <h1>✖️➗ Násobilka</h1>
+    <div class="score" id="score" aria-live="polite"><span class="ok">0</span> / 0</div>
+  </header>
+
+  <main>
+    <section class="screen" id="startScreen">
+      <div class="card">
+        <p class="lead">Precvič si malú násobilku a delenie.<br>Napíš výsledok a stlač <b>Odoslať</b>.</p>
+        <p class="last" id="lastSession" hidden></p>
+        <button class="primary" id="startBtn">Začať</button>
+      </div>
+    </section>
+
+    <section class="screen" id="quizScreen" hidden>
+      <div class="card">
+        <p class="problem" id="problem">7 × 8</p>
+        <form id="answerForm" autocomplete="off">
+          <input id="answer" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="3" aria-label="Tvoj výsledok" required>
+          <button class="primary" type="submit" id="submitBtn">Odoslať</button>
+        </form>
+        <div class="feedback" id="feedback" aria-live="assertive"></div>
+      </div>
+      <button class="ghost" id="stopBtn">Ukončiť</button>
+    </section>
+
+    <section class="screen" id="endScreen" hidden>
+      <div class="card">
+        <p class="lead" style="margin-bottom:4px">Výsledok tejto série</p>
+        <p class="big" id="endScore"></p>
+        <p class="lead" id="endMsg"></p>
+        <button class="primary" id="againBtn">Začať znova</button>
+      </div>
+    </section>
+  </main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  const screens = { start: $('startScreen'), quiz: $('quizScreen'), end: $('endScreen') };
+  const LAST_KEY = 'nasobilka-last';
+
+  let correct = 0, total = 0, current = null, lastKey = '', waiting = false;
+
+  function show(name) {
+    for (const [k, el] of Object.entries(screens)) el.hidden = k !== name;
+  }
+
+  function renderScore() {
+    $('score').innerHTML = `<span class="ok">${correct}</span> / ${total}`;
+  }
+
+  function rand(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+
+  function newProblem() {
+    let p;
+    do {
+      const a = rand(1, 10), b = rand(1, 10);
+      p = Math.random() < 0.5
+        ? { text: `${a} × ${b}`, result: a * b }
+        : { text: `${a * b} : ${a}`, result: b };
+    } while (p.text === lastKey);
+    lastKey = p.text;
+    return p;
+  }
+
+  function nextProblem() {
+    current = newProblem();
+    waiting = false;
+    $('problem').textContent = current.text;
+    $('feedback').className = 'feedback';
+    $('feedback').textContent = '';
+    $('answer').value = '';
+    $('answer').readOnly = false;
+    $('submitBtn').disabled = false;
+    $('answer').focus();
+  }
+
+  function saveLast() {
+    try { localStorage.setItem(LAST_KEY, JSON.stringify({ correct, total })); } catch (e) {}
+  }
+
+  function showLast() {
+    let last = null;
+    try { last = JSON.parse(localStorage.getItem(LAST_KEY)); } catch (e) {}
+    const el = $('lastSession');
+    if (last && last.total > 0) {
+      el.textContent = `Minulá séria: ${last.correct} z ${last.total} správne`;
+      el.hidden = false;
+      correct = last.correct; total = last.total;
+      renderScore();
+    } else {
+      el.hidden = true;
+    }
+  }
+
+  function start() {
+    correct = 0; total = 0; lastKey = '';
+    renderScore();
+    show('quiz');
+    nextProblem();
+  }
+
+  function stop() {
+    show('end');
+    $('endScore').textContent = `${correct} / ${total}`;
+    const pct = total ? Math.round(correct / total * 100) : 0;
+    let msg;
+    if (total === 0) msg = 'Nabudúce to skús aspoň s jedným príkladom 🙂';
+    else if (pct === 100) msg = `${pct} % – bezchybne! 🏆`;
+    else if (pct >= 90) msg = `${pct} % – výborne! 🌟`;
+    else if (pct >= 70) msg = `${pct} % – dobrá práca! 👍`;
+    else msg = `${pct} % – ešte trochu tréningu a bude to! 💪`;
+    $('endMsg').textContent = msg;
+    saveLast();
+  }
+
+  $('answerForm').addEventListener('submit', (e) => {
+    e.preventDefault();
+    if (waiting) { nextProblem(); return; }
+    const raw = $('answer').value.trim();
+    if (!/^\d+$/.test(raw)) { $('answer').focus(); return; }
+
+    waiting = true;
+    total++;
+    const fb = $('feedback');
+    $('answer').readOnly = true;
+
+    if (Number(raw) === current.result) {
+      correct++;
+      fb.className = 'feedback good';
+      fb.textContent = '✓ Správne!';
+      renderScore(); saveLast();
+      setTimeout(() => { if (waiting && !screens.quiz.hidden) nextProblem(); }, 700);
+    } else {
+      fb.className = 'feedback bad';
+      fb.innerHTML = `✗ Správne je ${current.text} = ${current.result}`;
+      const btn = document.createElement('button');
+      btn.className = 'next';
+      btn.type = 'button';
+      btn.textContent = 'Ďalej →';
+      btn.addEventListener('click', nextProblem);
+      fb.appendChild(btn);
+      $('submitBtn').disabled = true;
+      btn.focus();
+      renderScore(); saveLast();
+    }
+  });
+
+  $('startBtn').addEventListener('click', start);
+  $('againBtn').addEventListener('click', start);
+  $('stopBtn').addEventListener('click', stop);
+
+  showLast();
+
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('sw.js'));
+  }
+</script>
+</body>
+</html>
