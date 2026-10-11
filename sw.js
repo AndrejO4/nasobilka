@@ -1,5 +1,5 @@
 // Pri zmene súborov zvýš verziu, aby si telefóny stiahli novú verziu
-const CACHE = 'nasobilka-v1';
+const CACHE = 'nasobilka-v2';
 const FILES = ['./', 'index.html', 'manifest.json', 'icon.svg', 'icon-192.png', 'icon-512.png'];
 
 self.addEventListener('install', (e) => {
@@ -14,16 +14,23 @@ self.addEventListener('activate', (e) => {
   self.clients.claim();
 });
 
-// Najprv sieť (aby boli zmeny hneď vidieť), pri výpadku pamäť – appka tak funguje aj offline
+// Najprv pamäť (appka sa otvorí hneď, aj bez signálu), na pozadí sa stiahne novšia verzia
 self.addEventListener('fetch', (e) => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request)
-      .then((res) => {
-        const copy = res.clone();
-        caches.open(CACHE).then((c) => c.put(e.request, copy));
-        return res;
-      })
-      .catch(() => caches.match(e.request, { ignoreSearch: true }))
+    caches.open(CACHE).then(async (cache) => {
+      const cached = await cache.match(e.request, { ignoreSearch: true });
+      const fresh = fetch(e.request)
+        .then((res) => {
+          if (res.ok) cache.put(e.request, res.clone());
+          return res;
+        })
+        .catch(() => cached);
+      if (cached) {
+        e.waitUntil(fresh);
+        return cached;
+      }
+      return fresh;
+    })
   );
 });
